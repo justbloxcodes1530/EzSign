@@ -98,6 +98,13 @@ struct FilesView: View {
                         addButton
                         editButton
                     }
+                    NBToolbarMenu(
+                        systemImage: "line.3.horizontal.decrease",
+                        style: .icon,
+                        placement: .topBarTrailing
+                    ) {
+                        _sortActions()
+                    }
                     if viewModel.isEditMode == .active {
                         ToolbarItem(placement: .topBarLeading) {
                             HStack(spacing: 12) {
@@ -340,6 +347,7 @@ struct FilesView: View {
         } label: {
             Image(systemName: "trash")
         }
+        .tint(.red)
         .disabled(viewModel.selectedItems.isEmpty)
     }
     
@@ -436,4 +444,31 @@ struct FilesView: View {
     private func swipeActions(for file: FileItem) -> some View {
         FileUIHelpers.swipeActions(for: file, viewModel: viewModel)
     }
-} 
+
+    @ViewBuilder
+    private func _sortActions() -> some View {
+        Section(.localized("Filter by")) {
+            ForEach(FilesViewModel.SortOption.allCases, id: \.displayName) { opt in
+                _sortButton(for: opt)
+            }
+        }
+    }
+
+    private func _sortButton(for option: FilesViewModel.SortOption) -> some View {
+        Button {
+            if viewModel.sortOption == option {
+                viewModel.updateSort(option: option, ascending: !viewModel.sortAscending)
+            } else {
+                viewModel.updateSort(option: option, ascending: true)
+            }
+        } label: {
+            HStack {
+                Text(option.displayName)
+                Spacer()
+                if viewModel.sortOption == option {
+                    Image(systemName: viewModel.sortAscending ? "chevron.up" : "chevron.down")
+                }
+            }
+        }
+    }
+}

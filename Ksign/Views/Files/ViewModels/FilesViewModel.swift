@@ -8,11 +8,7 @@
 
 
 import SwiftUI
-import UniformTypeIdentifiers
-import Zip
-import SWCompression
-import ArArchiveKit
-import Zsign
+
 
 class FilesViewModel: ObservableObject {
     @Published var files: [FileItem] = []
@@ -22,6 +18,23 @@ class FilesViewModel: ObservableObject {
     @Published var showingImporter = false
     @Published var selectedItem: FileItem?
     @Published var showDirectoryPicker = false
+    
+    enum SortOption: String, CaseIterable {
+        case name
+        case date
+        case type
+        
+        var displayName: String {
+            switch self {
+            case .name:    .localized("Name")
+            case .date:    .localized("Date")
+            case .type:    .localized("Type")
+            }
+        }
+    }
+    
+    @Published var sortOption: SortOption = .name
+    @Published var sortAscending: Bool = true
     
     
     init(directory: URL? = nil) {
@@ -40,7 +53,7 @@ class FilesViewModel: ObservableObject {
         do {
             let contents = try fileManager.contentsOfDirectory(at: currentDirectory, includingPropertiesForKeys: [.isDirectoryKey, .creationDateKey, .fileSizeKey])
             
-            files = contents.compactMap { url in
+            let mapped = contents.compactMap { url in
                 do {
                     let resourceValues = try url.resourceValues(forKeys: [.isDirectoryKey, .creationDateKey, .fileSizeKey])
                     let isDirectory = resourceValues.isDirectory ?? false
@@ -58,7 +71,8 @@ class FilesViewModel: ObservableObject {
                     print("Error getting file attributes: \(error)")
                     return nil
                 }
-            }.sorted { $0.name.lowercased() < $1.name.lowercased() }
+            }
+            files = _applySort(to: mapped)
         } catch {
             DispatchQueue.main.async {
                 UIAlertController.showAlertWithOk(title: .localized("Error"), message: .localized("Error loading files: \(error.localizedDescription)"))
@@ -100,6 +114,7 @@ class FilesViewModel: ObservableObject {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             if let index = self.files.firstIndex(where: { $0.url == item.url }) {
                                 self.files.remove(at: index)
+                                self.files = self._applySort(to: self.files)
                             }
                         }
                     }
@@ -350,6 +365,45 @@ class FilesViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    func updateSort(option: SortOption, ascending: Bool) {
+        sortOption = option
+        sortAscending = ascending
+        files = _applySort(to: files)
+    }
+    
+    private func _applySort(to files: [FileItem]) -> [FileItem] {
+        return files.sorted { a, b in
+            switch sortOption {
+            case .name:
+                let cmp = a.name.localizedCaseInsensitiveCompare(b.name)
+                return sortAscending ? (cmp == .orderedAscending) : (cmp == .orderedDescending)
+            case .date:
+                let ad = a.creationDate ?? .distantPast
+                let bd = b.creationDate ?? .distantPast
+                if ad == bd {
+                    let cmp = a.name.localizedCaseInsensitiveCompare(b.name)
+                    return sortAscending ? (cmp == .orderedAscending) : (cmp == .orderedDescending)
+                }
+                return sortAscending ? (ad < bd) : (ad > bd)
+            case .type:
+                let at = _fileType(for: a)
+                let bt = _fileType(for: b)
+                let cmpType = at.localizedCaseInsensitiveCompare(bt)
+                if cmpType == .orderedSame {
+                    let cmpName = a.name.localizedCaseInsensitiveCompare(b.name)
+                    return sortAscending ? (cmpName == .orderedAscending) : (cmpName == .orderedDescending)
+                }
+                return sortAscending ? (cmpType == .orderedAscending) : (cmpType == .orderedDescending)
+            }
+        }
+    }
+    
+    private func _fileType(for file: FileItem) -> String {
+        if file.isDirectory { return .localized("Folder") }
+        let ext = file.url.pathExtension
+        return ext.isEmpty ? .localized("Unknown") : ext.lowercased()
     }
     
 } 
