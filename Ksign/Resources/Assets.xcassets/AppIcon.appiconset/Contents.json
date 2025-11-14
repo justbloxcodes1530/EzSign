@@ -1,10 +1,10 @@
 {
   "images" : [
     {
-      "filename" : "Ksign-default.png",
+      "filename" : "default.png",
       "idiom" : "universal",
       "platform" : "ios",
-      "size" : "1024x1024"
+      "size" : "720x720"
     },
     {
       "appearances" : [
@@ -13,10 +13,10 @@
           "value" : "dark"
         }
       ],
-      "filename" : "Ksign-trans.png",
+      "filename" : "transparent.png",
       "idiom" : "universal",
       "platform" : "ios",
-      "size" : "1024x1024"
+      "size" : "720x720"
     },
     {
       "appearances" : [
@@ -25,10 +25,10 @@
           "value" : "tinted"
         }
       ],
-      "filename" : "Ksign-trans 1.png",
+      "filename" : "transparent.png",
       "idiom" : "universal",
       "platform" : "ios",
-      "size" : "1024x1024"
+      "size" : "720x720"
     },
     {
       "idiom" : "mac",
